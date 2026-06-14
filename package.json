@@ -1,0 +1,18 @@
+{
+  "name": "mock-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "gen-log": "node app-log-generator.js",
+    "serve": "node app-server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.1",
+  "devDependencies": {
+    "json-server": "0.17.4",
+    "mockjs": "^1.1.0"
+  }
+}
