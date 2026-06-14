@@ -1,8 +1,8 @@
 # 依赖目录（pnpm 安装的包，绝对不上传）
-node_modules/
+mock/node_modules/
 
 # 日志文件（运行生成的模拟数据）
-output.log
+mock/output.log
 *.log
 
 # 运行缓存、临时文件
