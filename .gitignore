@@ -21,3 +21,65 @@ pm2.log
 
 # 环境配置（如有）
 .env
+# ===== Java / Maven =====
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+!**/src/main/**/*.jar
+!**/src/test/**/*.jar
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ===== IDE =====
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+*.project
+*.classpath
+.settings/
+.factorypath
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===== Log / Temp =====
+logs/
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# ===== Hadoop / Flink / Spark =====
+checkpoint/
+savepoint/
+flink-conf.yaml.bak
+
+# ===== Data files =====
+*.csv
+*.tsv
+*.parquet
+*.orc
+*.avro
+data/
+input/
+output/
+
+# ===== Credentials / Config (敏感配置) =====
+**/application-prod.yml
+**/application-prod.properties
+*secret*
+*password*
+.env
+.env.*
+
+# ===== WorkBuddy =====
+.workbuddy/
+
