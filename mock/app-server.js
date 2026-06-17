@@ -62,8 +62,8 @@ function getLocalIp() {
 const localIP = getLocalIp()
 
 const server = http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
 
+  res.setHeader('Access-Control-Allow-Origin', '*')
   // 1. 前端Vue可视化页面路由
   if (req.url === '/' && req.method === 'GET') {
     res.setHeader('Content-Type', 'text/html;charset=utf-8')
@@ -153,6 +153,12 @@ new Vue({
     return
   }
 
+  if (req.url === '/favicon.ico') {
+    res.writeHead(204)
+    res.end()
+    return
+  }
+
   // 单条日志接口
   if (req.url === '/one' && req.method === 'GET') {
     res.setHeader('Content-Type', 'application/json;charset=utf-8')
@@ -177,9 +183,11 @@ new Vue({
     return
   }
 
+
   res.writeHead(404)
   res.setHeader('Content-Type', 'application/json;charset=utf-8')
   res.end(JSON.stringify({ msg: "接口不存在，访问 / 打开可视化控制台页面" }))
+  return
 })
 
 server.listen(PORT, () => {
