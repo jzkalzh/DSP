@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Data Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 32px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group select {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 15px;
+            margin-top: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
+        .logs-container {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        .log-item {
+            color: #333;
+            padding: 8px 10px;
+            border-bottom: 1px solid #e0e0e0;
+            word-break: break-all;
+        }
+        
+        .log-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 15px;
+        }
+        
+        .status-running {
+            background: #ff9800;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .status-stopped {
+            background: #4caf50;
+            color: white;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .update-btn {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .update-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(33, 150, 243, 0.4);
+        }
+        
+        .message {
+            margin-top: 15px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .config-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .config-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .config-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .config-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mock Data Generator</h1>
+        
+        <div class="card">
+            <div class="card-title">
+                配置参数
+                <span th:if="${isRunning}" class="status-badge status-running">运行中</span>
+                <span th:unless="${isRunning}" class="status-badge status-stopped">已停止</span>
+            </div>
+            
+            <form id="configForm" class="form-grid">
+                <div class="form-group">
+                    <label>发送模式</label>
+                    <select name="mockType" id="mockType">
+                        <option value="log">日志模式</option>
+                        <option value="http">HTTP模式</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>HTTP地址</label>
+                    <input type="text" name="mockUrl" id="mockUrl" placeholder="http://localhost:8080/applog">
+                </div>
+                
+                <div class="form-group">
+                    <label>模拟次数</label>
+                    <input type="number" name="mockCount" id="mockCount" min="1" max="100000">
+                </div>
+                
+                <div class="form-group">
+                    <label>最大设备数</label>
+                    <input type="number" name="maxMid" id="maxMid" min="1" max="10000">
+                </div>
+                
+                <div class="form-group">
+                    <label>最大用户数</label>
+                    <input type="number" name="maxUid" id="maxUid" min="1" max="10000">
+                </div>
+                
+                <div class="form-group">
+                    <label>最大商品数</label>
+                    <input type="number" name="maxSkuId" id="maxSkuId" min="1" max="1000">
+                </div>
+                
+                <div class="form-group">
+                    <label>页面最大停留(ms)</label>
+                    <input type="number" name="pageDuringMax" id="pageDuringMax" min="1000" max="60000">
+                </div>
+                
+                <div class="form-group">
+                    <label>错误率(%)</label>
+                    <input type="number" name="errorRate" id="errorRate" min="0" max="100">
+                </div>
+                
+                <div class="form-group">
+                    <label>发送间隔(ms)</label>
+                    <input type="number" name="logSleep" id="logSleep" min="0" max="10000">
+                </div>
+                
+                <div class="btn-group">
+                    <button type="button" class="btn update-btn" onclick="updateConfig()">更新配置</button>
+                </div>
+            </form>
+            
+            <div id="updateMessage"></div>
+            
+            <div class="config-summary">
+                <div class="config-item">
+                    <div class="config-label">发送模式</div>
+                    <div class="config-value" id="summaryType">[[${mockType}]]</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">模拟次数</div>
+                    <div class="config-value" id="summaryCount">[[${mockCount}]]</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">设备数</div>
+                    <div class="config-value" id="summaryMid">[[${maxMid}]]</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">用户数</div>
+                    <div class="config-value" id="summaryUid">[[${maxUid}]]</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">操作控制</div>
+            <div class="btn-group">
+                <button id="runBtn" class="btn btn-primary" onclick="runMock()">
+                    <span th:if="${isRunning}">运行中...</span>
+                    <span th:unless="${isRunning}">开始模拟</span>
+                </button>
+                <button id="stopBtn" class="btn btn-danger" onclick="stopMock()">停止模拟</button>
+            </div>
+            <div id="runMessage"></div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">实时日志</div>
+            <div id="logsContainer" class="logs-container">
+                <div th:if="${logs == null or logs.size() == 0}" class="log-item">暂无日志，点击"开始模拟"生成数据...</div>
+                <div th:each="log : ${logs}" class="log-item" th:text="${log}"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('mockType').value = document.getElementById('summaryType').textContent.trim();
+            document.getElementById('mockUrl').value = '[[${mockUrl}]]';
+            document.getElementById('mockCount').value = parseInt(document.getElementById('summaryCount').textContent.trim());
+            document.getElementById('maxMid').value = parseInt(document.getElementById('summaryMid').textContent.trim());
+            document.getElementById('maxUid').value = parseInt(document.getElementById('summaryUid').textContent.trim());
+            document.getElementById('maxSkuId').value = [[${maxSkuId}]];
+            document.getElementById('pageDuringMax').value = [[${pageDuringMax}]];
+            document.getElementById('errorRate').value = [[${errorRate}]];
+            document.getElementById('logSleep').value = [[${logSleep}]];
+            
+            checkRunningStatus();
+            setInterval(checkRunningStatus, 2000);
+        });
+        
+        function updateConfig() {
+            var mockType = document.getElementById('mockType').value;
+            var mockUrl = document.getElementById('mockUrl').value;
+            var mockCount = parseInt(document.getElementById('mockCount').value);
+            var maxMid = parseInt(document.getElementById('maxMid').value);
+            var maxUid = parseInt(document.getElementById('maxUid').value);
+            var maxSkuId = parseInt(document.getElementById('maxSkuId').value);
+            var pageDuringMax = parseInt(document.getElementById('pageDuringMax').value);
+            var errorRate = parseInt(document.getElementById('errorRate').value);
+            var logSleep = parseInt(document.getElementById('logSleep').value);
+            
+            fetch('/update-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'mockType=' + encodeURIComponent(mockType) +
+                      '&mockUrl=' + encodeURIComponent(mockUrl) +
+                      '&mockCount=' + mockCount +
+                      '&maxMid=' + maxMid +
+                      '&maxUid=' + maxUid +
+                      '&maxSkuId=' + maxSkuId +
+                      '&pageDuringMax=' + pageDuringMax +
+                      '&errorRate=' + errorRate +
+                      '&logSleep=' + logSleep
+            })
+            .then(response => response.json())
+            .then(data => {
+                var messageDiv = document.getElementById('updateMessage');
+                messageDiv.className = 'message ' + (data.success ? 'success' : 'error');
+                messageDiv.textContent = data.message;
+                
+                if (data.success) {
+                    document.getElementById('summaryType').textContent = mockType;
+                    document.getElementById('summaryCount').textContent = mockCount;
+                    document.getElementById('summaryMid').textContent = maxMid;
+                    document.getElementById('summaryUid').textContent = maxUid;
+                    
+                    setTimeout(() => {
+                        messageDiv.textContent = '';
+                        messageDiv.className = 'message';
+                    }, 3000);
+                }
+            });
+        }
+        
+        function runMock() {
+            var btn = document.getElementById('runBtn');
+            btn.disabled = true;
+            
+            fetch('/run', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                var messageDiv = document.getElementById('runMessage');
+                messageDiv.className = 'message ' + (data.success ? 'success' : 'error');
+                messageDiv.textContent = data.message;
+                
+                if (data.success) {
+                    btn.textContent = '运行中...';
+                    document.querySelector('.status-running')?.remove();
+                    document.querySelector('.status-stopped')?.remove();
+                    var title = document.querySelector('.card-title');
+                    title.innerHTML += '<span class="status-badge status-running">运行中</span>';
+                }
+                
+                btn.disabled = false;
+            });
+        }
+        
+        function stopMock() {
+            fetch('/stop', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                var messageDiv = document.getElementById('runMessage');
+                messageDiv.className = 'message ' + (data.success ? 'success' : 'error');
+                messageDiv.textContent = data.message;
+                
+                if (data.success) {
+                    document.getElementById('runBtn').textContent = '开始模拟';
+                    document.querySelector('.status-running')?.remove();
+                    var title = document.querySelector('.card-title');
+                    title.innerHTML += '<span class="status-badge status-stopped">已停止</span>';
+                }
+            });
+        }
+        
+        function checkRunningStatus() {
+            fetch('/logs')
+            .then(response => response.json())
+            .then(data => {
+                var logsContainer = document.getElementById('logsContainer');
+                
+                if (data.logs && data.logs.length > 0) {
+                    logsContainer.innerHTML = '';
+                    data.logs.forEach(function(log) {
+                        var div = document.createElement('div');
+                        div.className = 'log-item';
+                        div.textContent = log;
+                        logsContainer.appendChild(div);
+                    });
+                }
+                
+                var btn = document.getElementById('runBtn');
+                if (data.isRunning) {
+                    btn.textContent = '运行中...';
+                    btn.disabled = true;
+                } else {
+                    btn.textContent = '开始模拟';
+                    btn.disabled = false;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

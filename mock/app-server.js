@@ -8,13 +8,12 @@ const path = require('path')
 const { generateOneLog } = require('./app-log-generator')
 
 const PORT = 3006
-// SpringBoot 服务地址
-const SPRING_HOST = '127.0.0.1'
-const SPRING_PORT = 8080
-const SPRING_PATH = '/applog'
+// nginx服务地址
+const SPRING_HOST = '192.168.10.101'
+const SPRING_PORT = 80
+const SPRING_PATH = '/log/upload'
 
 /**
- * 推送单条日志JSON字符串到SpringBoot接口
  * @param logObj 生成的日志对象
  */
 function sendToSpringBoot(logObj) {
@@ -34,12 +33,12 @@ function sendToSpringBoot(logObj) {
     let buf = ''
     res.on('data', chunk => buf += chunk)
     res.on('end', () => {
-      console.log(`推送成功 -> SpringBoot响应: ${buf}`)
+      console.log(`推送成功 -> nginx响应: ${buf}`)
     })
   })
 
   req.on('error', err => {
-    console.error(`推送SpringBoot失败: ${err.message}`)
+    console.error(`推送失败: ${err.message}`)
   })
 
   req.write(logStr)
