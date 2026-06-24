@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>规则表管理</title>
+    <style>
+        body {
+            font-family: Arial, "Microsoft YaHei", sans-serif;
+            margin: 30px;
+            background: #f7f8fa;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        input, select, textarea {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button, a.btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            background: #1677ff;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        button.danger {
+            background: #ff4d4f;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #e5e5e5;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f0f2f5;
+        }
+
+        .msg {
+            background: #e6f4ff;
+            border: 1px solid #91caff;
+            color: #0958d9;
+            padding: 10px;
+            margin-bottom: 16px;
+            border-radius: 6px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tag {
+            padding: 3px 8px;
+            border-radius: 12px;
+            background: #eee;
+        }
+    </style>
+</head>
+<body>
+
+<h1>规则表管理</h1>
+
+<div class="msg" th:if="${msg}" th:text="${msg}"></div>
+
+<div class="toolbar">
+    <form method="get" th:action="@{/rules}">
+        <input type="text" name="keyword" placeholder="按来源表搜索" th:value="${keyword}">
+        <button type="submit">搜索</button>
+    </form>
+
+    <a class="btn" th:href="@{/rules/new}">新增规则</a>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>来源表</th>
+        <th>操作类型</th>
+        <th>输出类型</th>
+        <th>输出表/主题</th>
+        <th>输出字段</th>
+        <th>主键</th>
+        <th>建表扩展</th>
+        <th>操作</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    <tr th:each="rule : ${rules}">
+        <td th:text="${rule.sourceTable}"></td>
+        <td th:text="${rule.operateType}"></td>
+        <td>
+            <span class="tag" th:text="${rule.sinkType}"></span>
+        </td>
+        <td th:text="${rule.sinkTable}"></td>
+        <td th:text="${rule.sinkColumns}"></td>
+        <td th:text="${rule.sinkPk}"></td>
+        <td th:text="${rule.sinkExtend}"></td>
+        <td>
+            <div class="actions">
+                <a class="btn"
+                   th:href="@{/rules/edit(sourceTable=${rule.sourceTable}, operateType=${rule.operateType})}">
+                    编辑
+                </a>
+
+                <form method="post" th:action="@{/rules/delete}"
+                      onsubmit="return confirm('确定删除这条规则吗？')">
+                    <input type="hidden" name="sourceTable" th:value="${rule.sourceTable}">
+                    <input type="hidden" name="operateType" th:value="${rule.operateType}">
+                    <button class="danger" type="submit">删除</button>
+                </form>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>
