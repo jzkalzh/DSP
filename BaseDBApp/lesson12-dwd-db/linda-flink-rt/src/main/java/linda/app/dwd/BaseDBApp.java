@@ -2,11 +2,14 @@ package linda.app.dwd;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import linda.app.fun.TableProcessFunction;
 import linda.utils.MyKafkaUtil;
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.util.OutputTag;
 
 public class BaseDBApp {
 
@@ -15,7 +18,7 @@ public class BaseDBApp {
         env.setParallelism(1);
 
         String topic = "topic_ods_base_db";
-        String groupId = "base_db_app_group_logan_01";
+        String groupId = "base_db_app_group_logan_02";
 
         DataStreamSource<String> kafkaDS = env.addSource(
                 MyKafkaUtil.getKafkaSource(topic, groupId)
@@ -45,7 +48,15 @@ public class BaseDBApp {
                     }
                 });
 
-        filterDS.print("filterDS");
+        OutputTag<JSONObject> hbaseTag = new OutputTag<JSONObject>("hbase") {};
+
+        SingleOutputStreamOperator<JSONObject> mainDS =
+                filterDS.process(new TableProcessFunction(hbaseTag));
+
+        DataStream<JSONObject> hbaseDS = mainDS.getSideOutput(hbaseTag);
+
+        mainDS.print("fact-kafka");
+        hbaseDS.print("dim-hbase");
 
         env.execute("BaseDBApp");
     }
