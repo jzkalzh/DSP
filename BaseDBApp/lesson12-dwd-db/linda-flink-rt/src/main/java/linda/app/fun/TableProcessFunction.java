@@ -7,15 +7,27 @@ import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject> {
 
     private final OutputTag<JSONObject> hbaseTag;
+
     private transient Connection phoenixConn;
-    private final Map<String, TableProcessInfo> tableProcessMap = new HashMap<>();
-    private final Set<String> existsTableSet = new HashSet<>();
+
+    private final Map<String, TableProcessInfo> tableProcessMap = new HashMap<String, TableProcessInfo>();
+
+    private final Set<String> existsTableSet = new HashSet<String>();
 
     public TableProcessFunction(OutputTag<JSONObject> hbaseTag) {
         this.hbaseTag = hbaseTag;
@@ -108,16 +120,17 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
 
         sql.append(") ").append(sinkExtend);
 
-        System.out.println("Phoenix create table sql: " + sql);
+        System.out.println("Phoenix create table sql: " + sql.toString());
 
         PreparedStatement ps = null;
+
         try {
             ps = phoenixConn.prepareStatement(sql.toString());
             ps.execute();
             phoenixConn.commit();
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        } finally {
             if (ps != null) {
                 try {
                     ps.close();
@@ -128,7 +141,7 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
     }
 
     @Override
-    public void processElement(JSONObject obj, Context ctx, Collector<JSONObject> out) {
+    public void processElement(JSONObject obj, Context ctx, Collector<JSONObject> out) throws Exception {
         String table = obj.getString("table");
         String type = obj.getString("type");
 
@@ -146,25 +159,52 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
         filterColumns(data, tableInfo.getSinkColumns());
 
         if ("hbase".equals(tableInfo.getSinkType())) {
-            ctx.output(hbaseTag, obj);
-        } else {
-            out.collect(obj);
-        }
+    System.out.println("分流到 HBase/Phoenix，source_table="
+            + table
+            + ", operate_type="
+            + type
+            + ", sink_table="
+            + tableInfo.getSinkTable()
+            + ", data="
+            + data.toJSONString());
+
+    ctx.output(hbaseTag, obj);
+} else {
+    System.out.println("分流到 Kafka，source_table="
+            + table
+            + ", operate_type="
+            + type
+            + ", sink_topic="
+            + tableInfo.getSinkTable()
+            + ", data="
+            + data.toJSONString());
+
+    out.collect(obj);
+}
     }
 
     private void filterColumns(JSONObject data, String sinkColumns) {
-        if (data == null || sinkColumns == null || sinkColumns.length() == 0) {
-            return;
-        }
+    if (data == null || sinkColumns == null || sinkColumns.length() == 0) {
+        return;
+    }
 
-        List<String> columns = Arrays.asList(sinkColumns.split(","));
-        Iterator<Map.Entry<String, Object>> iterator = data.entrySet().iterator();
+    Set<String> columns = new HashSet<String>();
 
-        while (iterator.hasNext()) {
-            Map.Entry<String, Object> entry = iterator.next();
-            if (!columns.contains(entry.getKey())) {
-                iterator.remove();
-            }
+    String[] arr = sinkColumns.split(",");
+    for (String col : arr) {
+        if (col != null && col.trim().length() > 0) {
+            columns.add(col.trim());
         }
     }
+
+    Iterator<Map.Entry<String, Object>> iterator = data.entrySet().iterator();
+
+    while (iterator.hasNext()) {
+        Map.Entry<String, Object> entry = iterator.next();
+
+        if (!columns.contains(entry.getKey())) {
+            iterator.remove();
+        }
+    }
+}
 }

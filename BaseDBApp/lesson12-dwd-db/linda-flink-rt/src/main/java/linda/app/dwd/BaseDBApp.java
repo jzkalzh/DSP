@@ -20,7 +20,7 @@ public class BaseDBApp {
         env.setParallelism(1);
 
         String topic = "topic_ods_base_db";
-        String groupId = "base_db_app_group_logan_03";
+        String groupId = "base_db_app_group_dynamic_favor_01";;
 
         DataStreamSource<String> kafkaDS = env.addSource(
                 MyKafkaUtil.getKafkaSource(topic, groupId)

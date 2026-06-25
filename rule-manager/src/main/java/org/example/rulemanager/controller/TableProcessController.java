@@ -97,12 +97,49 @@ public class TableProcessController {
     }
 
     private void normalize(TableProcess rule) {
-        if (!StringUtils.hasText(rule.getSinkPk())) {
-            rule.setSinkPk("id");
-        }
+    rule.setSourceTable(trimToNull(rule.getSourceTable()));
+    rule.setOperateType(trimToNull(rule.getOperateType()));
+    rule.setSinkType(trimToNull(rule.getSinkType()));
+    rule.setSinkTable(trimToNull(rule.getSinkTable()));
+    rule.setSinkColumns(normalizeColumns(rule.getSinkColumns()));
 
-        if (!StringUtils.hasText(rule.getSinkExtend())) {
-            rule.setSinkExtend(null);
+    if (!StringUtils.hasText(rule.getSinkPk())) {
+        rule.setSinkPk("id");
+    } else {
+        rule.setSinkPk(rule.getSinkPk().trim());
+    }
+
+    if (!StringUtils.hasText(rule.getSinkExtend())) {
+        rule.setSinkExtend(null);
+    } else {
+        rule.setSinkExtend(rule.getSinkExtend().trim());
+    }
+}
+
+private String trimToNull(String value) {
+    if (!StringUtils.hasText(value)) {
+        return null;
+    }
+    return value.trim();
+}
+
+private String normalizeColumns(String columns) {
+    if (!StringUtils.hasText(columns)) {
+        return null;
+    }
+
+    String[] arr = columns.split(",");
+    StringBuilder sb = new StringBuilder();
+
+    for (String col : arr) {
+        if (StringUtils.hasText(col)) {
+            if (sb.length() > 0) {
+                sb.append(",");
+            }
+            sb.append(col.trim());
         }
     }
+
+    return sb.toString();
+}
 }

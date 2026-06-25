@@ -83,3 +83,17 @@ output/
 # ===== WorkBuddy =====
 .workbuddy/
 
+
+# Lesson12 build files
+BaseDBApp/lesson12-dwd-db/linda-flink-rt/target/
+BaseDBApp/lesson12-dwd-db/linda-flink-rt/*.log
+BaseDBApp/lesson12-dwd-db/linda-flink-rt/logs/
+
+# rule-manager build files
+rule-manager/target/
+rule-manager/*.log
+rule-manager/logs/
+
+# temp files
+*.bak
+*.tmp
