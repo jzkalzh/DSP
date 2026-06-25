@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import linda.app.fun.DimSinkFunction;
 import linda.app.fun.TableProcessFunction;
+import linda.app.fun.DynamicKafkaSinkFunction;
 import linda.utils.MyKafkaUtil;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -59,9 +60,7 @@ public class BaseDBApp {
         factDS.print("fact-kafka");
         dimDS.print("dim-hbase");
 
-        factDS
-                .map(obj -> obj.getJSONObject("data").toJSONString())
-                .addSink(MyKafkaUtil.getKafkaSink("dwd_fact_db"));
+        factDS.addSink(new DynamicKafkaSinkFunction());
 
         dimDS.addSink(new DimSinkFunction());
 
