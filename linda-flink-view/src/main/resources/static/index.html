@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Linda 实时数仓可视化大屏</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, "Microsoft YaHei", sans-serif;
+            background: #08111f;
+            color: #eaf2ff;
+        }
+
+        .page {
+            padding: 24px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .title {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .time {
+            color: #9fb3d1;
+            font-size: 15px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .card {
+            background: linear-gradient(180deg, #12233f, #0d1a30);
+            border: 1px solid rgba(90, 150, 255, 0.28);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+        }
+
+        .card .label {
+            color: #9fb3d1;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .card .value {
+            font-size: 30px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .panel {
+            background: #0d1a30;
+            border: 1px solid rgba(90, 150, 255, 0.25);
+            border-radius: 14px;
+            padding: 18px;
+            min-height: 320px;
+        }
+
+        .panel h2 {
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            color: #ffffff;
+        }
+
+        .bar-row {
+            display: grid;
+            grid-template-columns: 110px 1fr 80px;
+            gap: 12px;
+            align-items: center;
+            margin: 12px 0;
+            font-size: 14px;
+        }
+
+        .bar-name {
+            color: #d8e6ff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .bar-track {
+            height: 14px;
+            background: #172946;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #36a3ff, #65f0ff);
+            border-radius: 999px;
+            transition: width 0.4s;
+        }
+
+        .bar-value {
+            color: #9fb3d1;
+            text-align: right;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th, td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: left;
+        }
+
+        th {
+            color: #8fb6ff;
+            font-weight: 600;
+        }
+
+        td {
+            color: #dce9ff;
+        }
+
+        .muted {
+            color: #8da3c4;
+        }
+
+        .status {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(54, 163, 255, 0.15);
+            color: #65f0ff;
+            font-size: 13px;
+        }
+
+        @media (max-width: 1200px) {
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="header">
+        <div>
+            <div class="title">Linda 实时数仓可视化大屏</div>
+            <div class="muted">DWS 访客主题 + 商品主题实时统计</div>
+        </div>
+        <div>
+            <span class="status">运行中</span>
+            <span class="time" id="nowTime"></span>
+        </div>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <div class="label">PV 页面访问量</div>
+            <div class="value" id="pv">0</div>
+        </div>
+        <div class="card">
+            <div class="label">UV 独立访客数</div>
+            <div class="value" id="uv">0</div>
+        </div>
+        <div class="card">
+            <div class="label">SV 进入次数</div>
+            <div class="value" id="sv">0</div>
+        </div>
+        <div class="card">
+            <div class="label">UJ 跳出次数</div>
+            <div class="value" id="uj">0</div>
+        </div>
+        <div class="card">
+            <div class="label">访问时长合计</div>
+            <div class="value" id="durSum">0</div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="panel">
+            <h2>商品点击 Top20</h2>
+            <div id="productTopBars"></div>
+        </div>
+
+        <div class="panel">
+            <h2>商品行为汇总</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>商品</th>
+                    <th>曝光</th>
+                    <th>点击</th>
+                    <th>收藏</th>
+                    <th>加购</th>
+                </tr>
+                </thead>
+                <tbody id="productTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>访客主题最近窗口</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>窗口开始</th>
+                <th>窗口结束</th>
+                <th>版本</th>
+                <th>渠道</th>
+                <th>地区</th>
+                <th>新老用户</th>
+                <th>PV</th>
+                <th>UV</th>
+                <th>SV</th>
+                <th>UJ</th>
+                <th>时长</th>
+            </tr>
+            </thead>
+            <tbody id="visitorTable"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function n(v) {
+        if (v === null || v === undefined) return 0;
+        return Number(v);
+    }
+
+    function fmt(v) {
+        v = n(v);
+        if (v >= 1000000) return (v / 1000000).toFixed(1) + "M";
+        if (v >= 10000) return (v / 10000).toFixed(1) + "W";
+        if (v >= 1000) return (v / 1000).toFixed(1) + "K";
+        return String(v);
+    }
+
+    function setTime() {
+        const d = new Date();
+        document.getElementById("nowTime").innerText =
+            d.getFullYear() + "-" +
+            String(d.getMonth() + 1).padStart(2, "0") + "-" +
+            String(d.getDate()).padStart(2, "0") + " " +
+            String(d.getHours()).padStart(2, "0") + ":" +
+            String(d.getMinutes()).padStart(2, "0") + ":" +
+            String(d.getSeconds()).padStart(2, "0");
+    }
+
+    async function fetchJson(url) {
+        const res = await fetch(url);
+        return await res.json();
+    }
+
+    async function loadVisitorTotal() {
+        try {
+            const data = await fetchJson("/api/visitor/total");
+
+            document.getElementById("pv").innerText = fmt(data.pv || data.PV);
+            document.getElementById("uv").innerText = fmt(data.uv || data.UV);
+            document.getElementById("sv").innerText = fmt(data.sv || data.SV);
+            document.getElementById("uj").innerText = fmt(data.uj || data.UJ);
+            document.getElementById("durSum").innerText = fmt(data.dur_sum || data.DUR_SUM);
+        } catch (e) {
+            console.error("loadVisitorTotal error", e);
+        }
+    }
+
+    async function loadVisitorRecent() {
+        try {
+            const list = await fetchJson("/api/visitor/recent");
+            const tbody = document.getElementById("visitorTable");
+            tbody.innerHTML = "";
+
+            list.slice(0, 20).forEach(row => {
+                const tr = document.createElement("tr");
+                tr.innerHTML =
+                    "<td>" + (row.stt || row.STT || "") + "</td>" +
+                    "<td>" + (row.edt || row.EDT || "") + "</td>" +
+                    "<td>" + (row.vc || row.VC || "") + "</td>" +
+                    "<td>" + (row.ch || row.CH || "") + "</td>" +
+                    "<td>" + (row.ar || row.AR || "") + "</td>" +
+                    "<td>" + (row.is_new || row.IS_NEW || "") + "</td>" +
+                    "<td>" + fmt(row.pv || row.PV) + "</td>" +
+                    "<td>" + fmt(row.uv || row.UV) + "</td>" +
+                    "<td>" + fmt(row.sv || row.SV) + "</td>" +
+                    "<td>" + fmt(row.uj || row.UJ) + "</td>" +
+                    "<td>" + fmt(row.dur_sum || row.DUR_SUM) + "</td>";
+                tbody.appendChild(tr);
+            });
+        } catch (e) {
+            console.error("loadVisitorRecent error", e);
+        }
+    }
+
+    async function loadProductTop() {
+        try {
+            const list = await fetchJson("/api/product/top");
+            const box = document.getElementById("productTopBars");
+            const tbody = document.getElementById("productTable");
+
+            box.innerHTML = "";
+            tbody.innerHTML = "";
+
+            const topList = list.slice(0, 20);
+            let maxClick = 1;
+
+            topList.forEach(row => {
+                const click = n(row.click_ct || row.CLICK_CT);
+                if (click > maxClick) maxClick = click;
+            });
+
+            topList.forEach(row => {
+                const skuName = row.sku_name || row.SKU_NAME || ("sku_" + (row.sku_id || row.SKU_ID));
+                const click = n(row.click_ct || row.CLICK_CT);
+                const percent = Math.max(3, Math.round(click / maxClick * 100));
+
+                const div = document.createElement("div");
+                div.className = "bar-row";
+                div.innerHTML =
+                    "<div class='bar-name'>" + skuName + "</div>" +
+                    "<div class='bar-track'><div class='bar-fill' style='width:" + percent + "%'></div></div>" +
+                    "<div class='bar-value'>" + fmt(click) + "</div>";
+                box.appendChild(div);
+
+                const tr = document.createElement("tr");
+                tr.innerHTML =
+                    "<td>" + (row.sku_id || row.SKU_ID || "") + "</td>" +
+                    "<td>" + skuName + "</td>" +
+                    "<td>" + fmt(row.display_ct || row.DISPLAY_CT) + "</td>" +
+                    "<td>" + fmt(row.click_ct || row.CLICK_CT) + "</td>" +
+                    "<td>" + fmt(row.favor_ct || row.FAVOR_CT) + "</td>" +
+                    "<td>" + fmt(row.cart_ct || row.CART_CT) + "</td>";
+                tbody.appendChild(tr);
+            });
+        } catch (e) {
+            console.error("loadProductTop error", e);
+        }
+    }
+
+    async function reloadAll() {
+        setTime();
+        await loadVisitorTotal();
+        await loadVisitorRecent();
+        await loadProductTop();
+    }
+
+    reloadAll();
+    setInterval(reloadAll, 5000);
+    setInterval(setTime, 1000);
+</script>
+</body>
+</html>
