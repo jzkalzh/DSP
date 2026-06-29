@@ -60,6 +60,86 @@ function getLocalIp() {
 }
 const localIP = getLocalIp()
 
+// ====================== 自动生产配置 ======================
+const AUTO_BATCH_SIZE = 10          // 每次生产10条
+const AUTO_INTERVAL_MS = 10 * 1000  // 每10秒执行一次
+
+let autoTimer = null
+let autoTotal = 0
+let autoRound = 0
+
+/**
+ * 自动生产并推送一批日志
+ * @param count 本批次生成条数
+ */
+function produceAndSendBatch(count = AUTO_BATCH_SIZE) {
+  const resultList = []
+
+  for (let i = 0; i < count; i++) {
+    const logItem = generateOneLog()
+    resultList.push(logItem)
+    sendToSpringBoot(logItem)
+  }
+
+  autoRound += 1
+  autoTotal += resultList.length
+
+  console.log(
+    `[自动生产] 第 ${autoRound} 轮，生产并推送 ${resultList.length} 条，累计 ${autoTotal} 条`
+  )
+
+  return resultList
+}
+
+/**
+ * 启动自动生产
+ */
+function startAutoGenerate() {
+  if (autoTimer) {
+    return false
+  }
+
+  // 启动后立即先生产10条
+  produceAndSendBatch(AUTO_BATCH_SIZE)
+
+  // 之后每10秒生产10条
+  autoTimer = setInterval(() => {
+    produceAndSendBatch(AUTO_BATCH_SIZE)
+  }, AUTO_INTERVAL_MS)
+
+  console.log(`[自动生产] 已启动，每 ${AUTO_INTERVAL_MS / 1000}s 生产 ${AUTO_BATCH_SIZE} 条`)
+  return true
+}
+
+/**
+ * 停止自动生产
+ */
+function stopAutoGenerate() {
+  if (!autoTimer) {
+    return false
+  }
+
+  clearInterval(autoTimer)
+  autoTimer = null
+
+  console.log('[自动生产] 已停止')
+  return true
+}
+
+/**
+ * 获取自动生产状态
+ */
+function getAutoStatus() {
+  return {
+    running: !!autoTimer,
+    batchSize: AUTO_BATCH_SIZE,
+    intervalMs: AUTO_INTERVAL_MS,
+    intervalSeconds: AUTO_INTERVAL_MS / 1000,
+    total: autoTotal,
+    round: autoRound
+  }
+}
+
 const server = http.createServer((req, res) => {
 
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -86,6 +166,10 @@ const server = http.createServer((req, res) => {
     button {padding:12px 24px;border:none;border-radius:6px;font-size:15px;cursor:pointer}
     .btn-single {background:#409eff;color:#fff}
     .btn-batch {background:#67c23a;color:#fff}
+    .btn-auto-start {background:#e6a23c;color:#fff}
+    .btn-auto-stop {background:#f56c6c;color:#fff}
+    .btn-status {background:#909399;color:#fff}
+    .status-box {margin-top:16px;padding:12px;background:#ecf5ff;border:1px solid #b3d8ff;border-radius:6px;color:#409eff;font-size:14px}
     .log-box {margin-top:30px;padding:16px;background:#fafafa;border:1px solid #e4e7ed;border-radius:8px;min-height:180px;white-space:pre-wrap;font-size:13px;color:#303133}
     .tip {color:#909399;font-size:13px;margin-top:8px}
   </style>
@@ -105,6 +189,19 @@ const server = http.createServer((req, res) => {
     <button class="btn-batch" @click="sendBatch">批量发送 {{sendNum}} 条日志</button>
   </div>
 
+  <div class="btn-group">
+    <button class="btn-auto-start" @click="startAuto">启动自动生成</button>
+    <button class="btn-auto-stop" @click="stopAuto">停止自动生成</button>
+    <button class="btn-status" @click="getAutoStatus">查看状态</button>
+  </div>
+
+  <div class="status-box">
+    自动生成状态：
+    <b>{{ autoStatus.running ? '运行中' : '未运行' }}</b>
+    ，每 {{ autoStatus.intervalSeconds || 10 }} 秒生成 {{ autoStatus.batchSize || 10 }} 条，
+    已生成 {{ autoStatus.total || 0 }} 条
+  </div>
+
   <div style="margin-top:30px;font-weight:bold">操作日志：</div>
   <div class="log-box">{{logText}}</div>
 </div>
@@ -115,7 +212,14 @@ new Vue({
   data() {
     return {
       sendNum: 10,
-      logText: ''
+      logText: '',
+      autoStatus: {
+        running: false,
+        batchSize: 10,
+        intervalSeconds: 10,
+        total: 0,
+        round: 0
+      }
     }
   },
   methods: {
@@ -125,7 +229,7 @@ new Vue({
       try {
         const res = await fetch('/one')
         const data = await res.json()
-        this.logText += '✅ 单条日志推送完成，示例数据：' + JSON.stringify(data).slice(0,120) + '...\\n'
+        this.logText += ' 单条日志推送完成，示例数据：' + JSON.stringify(data).slice(0,120) + '...\\n'
       } catch (e) {
         this.logText += '❌ 发送失败：' + e.message + '\\n'
       }
@@ -137,9 +241,46 @@ new Vue({
       try {
         const res = await fetch('/batch?num=' + num)
         const list = await res.json()
-        this.logText += '✅ 批量推送完成，共' + list.length + '条\\n'
+        this.logText += '批量推送完成，共' + list.length + '条\\n'
       } catch (e) {
         this.logText += '❌ 批量发送失败：' + e.message + '\\n'
+      }
+    },
+    // 启动自动生成
+    async startAuto() {
+      this.logText += '【' + new Date().toLocaleString() + '】启动自动生成任务\\n'
+      try {
+        const res = await fetch('/auto/start')
+        const data = await res.json()
+        this.autoStatus = data.status
+        this.logText += data.msg + '\\n'
+      } catch (e) {
+        this.logText += '❌ 启动自动生成失败：' + e.message + '\\n'
+      }
+    },
+
+    // 停止自动生成
+    async stopAuto() {
+      this.logText += '【' + new Date().toLocaleString() + '】停止自动生成任务\\n'
+      try {
+        const res = await fetch('/auto/stop')
+        const data = await res.json()
+        this.autoStatus = data.status
+        this.logText += data.msg + '\\n'
+      } catch (e) {
+        this.logText += '❌ 停止自动生成失败：' + e.message + '\\n'
+      }
+    },
+
+    // 查看自动生成状态
+    async getAutoStatus() {
+      try {
+        const res = await fetch('/auto/status')
+        const data = await res.json()
+        this.autoStatus = data.status
+        this.logText += '【' + new Date().toLocaleString() + '】自动生成状态：' + JSON.stringify(data.status) + '\\n'
+      } catch (e) {
+        this.logText += '❌ 获取状态失败：' + e.message + '\\n'
       }
     }
   }
@@ -181,6 +322,42 @@ new Vue({
     res.end(JSON.stringify(resultList, null, 2))
     return
   }
+    // 启动自动生产接口：每10秒生产10条
+  if (req.url === '/auto/start' && req.method === 'GET') {
+    res.setHeader('Content-Type', 'application/json;charset=utf-8')
+
+    const started = startAutoGenerate()
+
+    res.end(JSON.stringify({
+      msg: started ? '自动生产已启动' : '自动生产已经在运行中',
+      status: getAutoStatus()
+    }, null, 2))
+    return
+  }
+
+  // 停止自动生产接口
+  if (req.url === '/auto/stop' && req.method === 'GET') {
+    res.setHeader('Content-Type', 'application/json;charset=utf-8')
+
+    const stopped = stopAutoGenerate()
+
+    res.end(JSON.stringify({
+      msg: stopped ? '自动生产已停止' : '自动生产当前没有运行',
+      status: getAutoStatus()
+    }, null, 2))
+    return
+  }
+
+  // 查看自动生产状态
+  if (req.url === '/auto/status' && req.method === 'GET') {
+    res.setHeader('Content-Type', 'application/json;charset=utf-8')
+
+    res.end(JSON.stringify({
+      msg: '自动生产状态',
+      status: getAutoStatus()
+    }, null, 2))
+    return
+  }
 
 
   res.writeHead(404)
@@ -190,7 +367,7 @@ new Vue({
 })
 
 server.listen(PORT, () => {
-  console.log(`✅ Mock可视化控制台地址：http://localhost:${PORT}`)
-  console.log(`✅ 局域网访问地址：http://${localIP}:${PORT}`)
-  console.log(`✅ 日志推送目标SpringBoot：http://${SPRING_HOST}:${SPRING_PORT}${SPRING_PATH}`)
+  console.log(`Mock可视化控制台地址：http://localhost:${PORT}`)
+  console.log(`局域网访问地址：http://${localIP}:${PORT}`)
+  console.log(`日志推送目标SpringBoot：http://${SPRING_HOST}:${SPRING_PORT}${SPRING_PATH}`)
 })

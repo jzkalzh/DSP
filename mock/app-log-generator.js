@@ -168,14 +168,16 @@ function generateBatchLog(total = 100, filePath = "./output/output.log") {
   }
 
   writeStream.end(() => {
-    console.log(`✅ 生成完成！共 ${total} 条日志，文件路径：${filePath}`)
+    console.log(`生成完成！共 ${total} 条日志，文件路径：${filePath}`)
   })
 }
 
 // ========== 执行入口 ==========
-// 修改数字可调整生成条数，示例：生成200条
-generateBatchLog(200)
+if(require.main === module){
+  generateBatchLog(200)
+}
 
 module.exports = {
-  generateOneLog
+  generateOneLog,
+  generateBatchLog
 }
