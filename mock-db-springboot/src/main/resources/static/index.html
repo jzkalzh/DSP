@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Linda Mall MockDB</title>
+    <style>
+        body { font-family: Arial, "Microsoft YaHei", sans-serif; background:#f5f7fb; margin:0; padding:30px; }
+        .box { max-width: 980px; margin:0 auto; background:white; border-radius:12px; padding:24px; box-shadow:0 8px 30px rgba(0,0,0,.08); }
+        h1 { margin-top:0; }
+        button { margin:8px; padding:10px 16px; border:0; border-radius:8px; background:#4f66f0; color:white; cursor:pointer; }
+        button.stop { background:#e85252; }
+        input { padding:9px; width:80px; }
+        pre { background:#111827; color:#e5e7eb; padding:16px; border-radius:8px; overflow:auto; min-height:180px; }
+        .tip { color:#555; line-height:1.7; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>Linda Mall MockDB</h1>
+    <p class="tip">
+        这个程序只向 MySQL 的 <b>linda-mall</b> 写业务数据。<br>
+        写入 MySQL 后，Maxwell 会监听 binlog，把数据发送到 Kafka 的 topic_ods_base_db。
+    </p>
+    <div>
+        每次生成数量：<input id="count" type="number" value="1" min="1" max="1000">
+    </div>
+    <div>
+        <button onclick="post('/api/mock/trademark?count=' + count())">生成 base_trademark</button>
+        <button onclick="post('/api/mock/base-dic?count=' + count())">生成 base_dic</button>
+        <button onclick="post('/api/mock/favor?count=' + count())">生成 favor_info</button>
+        <button onclick="post('/api/mock/cart?count=' + count())">生成 cart_info</button>
+        <button onclick="post('/api/mock/comment?count=' + count())">生成 comment_info</button>
+        <button onclick="post('/api/mock/order?count=' + count())">生成订单+明细+支付</button>
+        <button onclick="post('/api/mock/core-all?count=' + count())">生成核心全链路</button>
+    </div>
+    <div>
+        <button onclick="post('/api/mock/run?rounds=100&sleepMs=200')">后台连续生成</button>
+        <button class="stop" onclick="post('/api/mock/stop')">停止后台任务</button>
+        <button onclick="get('/api/mock/logs')">查看运行日志</button>
+        <button onclick="get('/api/mock/tables')">查看所有表</button>
+    </div>
+    <pre id="output">点击按钮开始造数...</pre>
+</div>
+<script>
+    function count() { return document.getElementById('count').value || 1; }
+    function show(data) { document.getElementById('output').textContent = JSON.stringify(data, null, 2); }
+    function post(url) { fetch(url, { method: 'POST' }).then(r => r.json()).then(show).catch(e => show({error:e.message})); }
+    function get(url) { fetch(url).then(r => r.json()).then(show).catch(e => show({error:e.message})); }
+</script>
+</body>
+</html>
